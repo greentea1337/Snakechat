@@ -1,8 +1,36 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QLineEdit, QPushButton
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QLineEdit, QPushButton, QLabel, QDialog, QGridLayout
 from PyQt5.QtCore import Qt
 import socket
 import threading
+
+class NicknameDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.init_ui()
+
+    def init_ui(self):
+        # Set dialog properties
+        self.setWindowTitle('Enter Nickname')
+        self.setModal(True)
+
+        # Create nickname input textbox and OK button
+        self.nickname_input = QLineEdit(self)
+        self.ok_button = QPushButton('OK', self)
+
+        # Create layout for nickname input and OK button
+        input_layout = QHBoxLayout()
+        input_layout.addWidget(self.nickname_input)
+        input_layout.addWidget(self.ok_button)
+
+        # Set dialog layout
+        self.setLayout(input_layout)
+
+        # Connect OK button to accept() method
+        self.ok_button.clicked.connect(self.accept)
+
+    def get_nickname(self):
+        return self.nickname_input.text()
 
 class ClientGUI(QWidget):
     def __init__(self):
@@ -46,7 +74,9 @@ class ClientGUI(QWidget):
         self.client_socket.connect(('127.0.0.1', 8080))
 
         # Prompt user to enter nickname and send to server
-        self.nickname = input("Enter your nickname: ")
+        nickname_dialog = NicknameDialog()
+        nickname_dialog.exec_()
+        self.nickname = nickname_dialog.get_nickname()
         self.client_socket.send(self.nickname.encode('utf-8'))
 
         # Create thread to receive messages from server
