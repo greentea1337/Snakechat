@@ -50,10 +50,14 @@ class ClientGUI(QWidget):
         self.message_input = QLineEdit(self)
         self.send_button = QPushButton('Send', self)
 
-        # Create layout for message input and send button
+        # Create exit button
+        self.exit_button = QPushButton('Exit', self)
+
+        # Create layout for message input, send button, and exit button
         input_layout = QHBoxLayout()
         input_layout.addWidget(self.message_input)
         input_layout.addWidget(self.send_button)
+        input_layout.addWidget(self.exit_button)
 
         # Create main layout
         main_layout = QVBoxLayout()
@@ -68,6 +72,9 @@ class ClientGUI(QWidget):
 
         # Connect message input to send_button using return key
         self.message_input.returnPressed.connect(self.send_button.click)
+
+        # Connect exit button to exit_chat() method
+        self.exit_button.clicked.connect(self.exit_chat)
 
         # Create socket object and connect to server
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -97,6 +104,10 @@ class ClientGUI(QWidget):
         if message != '':
             self.client_socket.send(f"{self.nickname}: {message}".encode('utf-8'))
             self.message_input.setText('')
+
+    def exit_chat(self):
+        self.client_socket.close()
+        self.close()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
