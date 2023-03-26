@@ -38,14 +38,10 @@ class ServerGUI(QWidget):
         self.stop_button.setEnabled(False)
         self.stop_button.clicked.connect(self.stop_server)
 
-        self.exit_button = QPushButton('Exit', self)
-        self.exit_button.clicked.connect(self.exit_program)
-
         # Button layout
         button_layout = QHBoxLayout()
         button_layout.addWidget(self.start_button)
         button_layout.addWidget(self.stop_button)
-        button_layout.addWidget(self.exit_button)
 
         # Chat and client list layout
         chat_layout = QHBoxLayout()
@@ -78,12 +74,6 @@ class ServerGUI(QWidget):
         nicknames.clear()
 
         self.chat_history.append('Server stopped.')
-
-    def exit_program(self):
-        for client in clients:
-            client.close()
-
-        sys.exit()
 
     def broadcast(self, message):
         for client in clients:
