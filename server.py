@@ -2,18 +2,56 @@ import sys
 import socket
 import threading
 
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QListWidget, QPushButton
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QListWidget, QPushButton, QDialog, QLabel, QLineEdit
 
 
-HOST = '127.0.0.1'  # localhost
-PORT = 8080
+class ConfigDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind((HOST, PORT))
-server.listen()
+        self.setWindowTitle('Configuration')
 
-clients = []
-nicknames = []
+        # IP address input
+        ip_label = QLabel('IP Address:', self)
+        self.ip_input = QLineEdit(self)
+        self.ip_input.setText('127.0.0.1')
+
+        ip_layout = QHBoxLayout()
+        ip_layout.addWidget(ip_label)
+        ip_layout.addWidget(self.ip_input)
+
+        # Port number input
+        port_label = QLabel('Port Number:', self)
+        self.port_input = QLineEdit(self)
+        self.port_input.setText('8080')
+
+        port_layout = QHBoxLayout()
+        port_layout.addWidget(port_label)
+        port_layout.addWidget(self.port_input)
+
+        # OK and Cancel buttons
+        ok_button = QPushButton('OK', self)
+        ok_button.clicked.connect(self.accept)
+
+        cancel_button = QPushButton('Cancel', self)
+        cancel_button.clicked.connect(self.reject)
+
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(ok_button)
+        button_layout.addWidget(cancel_button)
+
+        # Main layout
+        main_layout = QVBoxLayout()
+        main_layout.addLayout(ip_layout)
+        main_layout.addLayout(port_layout)
+        main_layout.addLayout(button_layout)
+
+        self.setLayout(main_layout)
+
+    def get_config(self):
+        ip = self.ip_input.text()
+        port = int(self.port_input.text())
+        return ip, port
 
 
 class ServerGUI(QWidget):
@@ -30,7 +68,7 @@ class ServerGUI(QWidget):
         self.client_list = QListWidget(self)
         self.client_list.setMaximumWidth(150)
 
-        # Start/Stop/Exit buttons
+        # Start/Stop/Exit/Config buttons
         self.start_button = QPushButton('Start Server', self)
         self.start_button.clicked.connect(self.start_server)
 
@@ -38,10 +76,14 @@ class ServerGUI(QWidget):
         self.stop_button.setEnabled(False)
         self.stop_button.clicked.connect(self.stop_server)
 
+        self.config_button = QPushButton('Config', self)
+        self.config_button.clicked.connect(self.configure_server)
+
         # Button layout
         button_layout = QHBoxLayout()
         button_layout.addWidget(self.start_button)
         button_layout.addWidget(self.stop_button)
+        button_layout.addWidget(self.config_button)
 
         # Chat and client list layout
         chat_layout = QHBoxLayout()
@@ -55,13 +97,23 @@ class ServerGUI(QWidget):
 
         self.setLayout(main_layout)
 
+        self.ip = '127.0.0.1'
+        self.port = 8080
+
+    def configure_server(self):
+        dialog = ConfigDialog(self)
+        if dialog.exec_():
+            self.ip, self.port = dialog.get_config()
+
     def start_server(self):
         self.start_button.setEnabled(False)
         self.stop_button.setEnabled(True)
 
-        threading.Thread(target=self.receive).start()
+        server_thread = threading.Thread(target=self.receive)
+        server_thread.daemon = True
+        server_thread.start()
 
-        self.chat_history.append('Server running...')
+        self.chat_history.append(f'Server running on {self.ip}:{self.port}...')
 
     def stop_server(self):
         self.start_button.setEnabled(True)
@@ -95,6 +147,15 @@ class ServerGUI(QWidget):
                 break
 
     def receive(self):
+        global server, clients, nicknames
+
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind((self.ip, self.port))
+        server.listen()
+
+        clients = []
+        nicknames = []
+
         while True:
             client, address = server.accept()
             self.chat_history.append(f"Connected with {str(address)}")
